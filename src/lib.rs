@@ -214,7 +214,7 @@ impl Display for Spinner4 {
     }
 }
 
-/// A spinner that cycles through 8 states with a snake made of 1-6 braille dots
+/// A spinner that cycles through many states with a snake made of 1-6 braille dots
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Snake {
     state: u32
