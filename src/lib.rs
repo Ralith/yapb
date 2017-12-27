@@ -131,11 +131,9 @@ impl Progress for Counter256 {
 
 fn braille_binary(value: u8) -> char {
     // Rearrange bits for consistency
-    let value =
-         (value & 0b00000111)       |
-        ((value & 0b00001000) << 3) |
-        ((value & 0b01110000) >> 1) |
-         (value & 0b10000000);
+    let value = (value & 0b10000111)
+        | ((value & 0b00001000) << 3)
+        | ((value & 0b01110000) >> 1);
     unsafe { ::std::char::from_u32_unchecked(0x2800 + value as u32) }
 }
 
