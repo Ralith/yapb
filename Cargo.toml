@@ -1,0 +1,18 @@
+[package]
+name = "yapb"
+version = "0.1.0"
+authors = ["Benjamin Saunders <ben.e.saunders@gmail.com>"]
+description = "Lightweight pure, and unopinionated Unicode progress visualization"
+repository = "https://github.com/Ralith/yapb"
+keywords = ["progress", "cli"]
+categories = ["command-line-interface"]
+license = "Apache-2.0"
+
+[badges]
+maintenance = { status = "actively-developed" }
+is-it-maintained-open-issues = { repository = "Ralith/yapb" }
+
+[dependencies]
+
+[dev-dependencies]
+termion = "1.5"
