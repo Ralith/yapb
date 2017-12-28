@@ -30,6 +30,7 @@
 //! ```
 
 use std::fmt::{self, Write, Display};
+use std::time::Duration;
 
 /// Types that can display a progress state
 ///
@@ -244,3 +245,29 @@ impl Display for Snake {
     }
 }
 
+/// A helper for estimating time to completion using an exponential moving average
+#[derive(Debug, Copy, Clone)]
+pub struct TimeEstimate {
+    alpha: f32,
+    rate: f32,
+}
+
+impl TimeEstimate {
+    /// `alpha` is in (0, 1] describing how responsive to be, and `rate` is in [0, 1] describing initial progress per
+    /// second
+    pub fn new(alpha: f32, rate: f32) -> Self { TimeEstimate { alpha, rate } }
+
+    /// `progress` is change in proportion complete over `interval`
+    pub fn update(&mut self, progress: f32, interval: Duration) {
+        let seconds = interval.as_secs() as f32 + interval.subsec_nanos() as f32 * 1e-9;
+        self.rate = self.alpha * progress / seconds + (1.0 - self.alpha) * self.rate;
+    }
+
+    /// `remaining` is the proportion incomplete
+    ///
+    /// Returns the expected amount of time until completion.
+    pub fn estimate(&self, remaining: f32) -> Duration {
+        let seconds = remaining / self.rate;
+        Duration::new(seconds.trunc() as u64, ((seconds as f64).fract() * 1e9) as u32)
+    }
+}
