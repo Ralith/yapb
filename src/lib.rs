@@ -15,10 +15,10 @@
 //! use yapb::{Bar, Progress};
 //!
 //! fn main() {
-//!   let mut bar = yapb::Bar::new();
+//!   let mut bar = Bar::new();
 //!   print!("{}", termion::cursor::Save);
 //!   for i in 0..100 {
-//!     bar.set(i * (u32::max_value() / 100));
+//!     bar.set(i as f32 / 100.0);
 //!     let (width, _) = termion::terminal_size().unwrap();
 //!     print!("{}{}[{:width$}]",
 //!            termion::clear::AfterCursor, termion::cursor::Restore,
@@ -30,61 +30,56 @@
 //! ```
 
 use std::fmt::{self, Write, Display};
-use std::time::Duration;
 
-/// Types that can display a progress state
-///
-/// Progress values are unrestricted 32-bit integers. The "finished" state is `u32::max_value()`. Implementations of
-/// these two setters should only be a handful of instructions, with all complexity deferred to the `Display` impl.
+/// Indicators that communicate a proportion of progress towards a known end point
 pub trait Progress: Display {
-    /// Set the amount of progress to an absolute value.
-    fn set(&mut self, value: u32);
-    /// Advance the current state `count` times.
-    fn step(&mut self, count: u32);
+    /// Set the amount of progress
+    ///
+    /// `value` must be in [0, 1]. Implementations should be trivial, with any complexity deferred to the
+    /// `Display` implementation.
+    fn set(&mut self, value: f32);
 }
 
 /// A high-resolution progress bar using block elements
-///
-/// Note that the associated `Progress::step` implementation saturates.
 ///
 /// # Examples
 /// ```
 /// # use yapb::*;
 /// let mut bar = Bar::new();
-/// bar.set(55 * (u32::max_value() / 100));
+/// bar.set(0.55);
 /// assert_eq!(format!("[{:10}]", bar), "[█████▌    ]");
 /// ```
-#[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Bar {
-    progress: u32,
+    progress: f32,
 }
 
 impl Bar {
     pub fn new() -> Self { Bar {
-        progress: 0,
+        progress: 0.0,
     }}
 
-    pub fn get(&self) -> u32 { self.progress }
+    pub fn get(&self) -> f32 { self.progress }
 }
 
 impl Progress for Bar {
-    fn set(&mut self, state: u32) { self.progress = state; }
-    fn step(&mut self, count: u32) { self.progress.saturating_add(count); }
+    fn set(&mut self, value: f32) { self.progress = value; }
 }
 
 impl Display for Bar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let width = f.width().unwrap_or(80) as u32;
         // Scale by width, rounding to nearest
-        let approx = (((self.progress as u64) * (width as u64 * 8) + u32::max_value() as u64) >> 32) as u32;
-        let whole = approx / 8;
+        let count = width as f32 * self.progress;
+        let whole = count.trunc() as u32;
         for _ in 0..whole {
             f.write_char('█')?;
         }
-        let fraction = approx % 8;
+        let fraction = (count.fract() * 8.0).trunc() as u32;
         let fill = f.fill();
-        if fraction != 0 {
+        if whole < width {
             f.write_char(match fraction {
+                0 => fill,
                 1 => '▏',
                 2 => '▎',
                 3 => '▍',
@@ -94,14 +89,23 @@ impl Display for Bar {
                 7 => '▉',
                 _ => unreachable!(),
             })?;
-        } else if whole < width {
-            f.write_char(fill)?;
-        }
-        for _ in whole..(width - 1) {
-            f.write_char(fill)?;
+            for _ in whole..(width - 1) {
+                f.write_char(fill)?;
+            }
         }
         Ok(())
     }
+}
+
+/// Indicators that animate through some number of states to indicate activity with indefinite duration
+///
+/// Incrementing a state by 1 advances by one frame of animation. Implementations of these two setters should only be a
+/// handful of instructions, with all complexity deferred to the `Display` impl.
+pub trait Spinner: Display {
+    /// Set a specific state
+    fn set(&mut self, value: u32);
+    /// Advance the current state `count` times.
+    fn step(&mut self, count: u32);
 }
 
 /// A spinner that cycles through 256 states by counting in binary using braille
@@ -125,7 +129,7 @@ impl Counter256 {
     pub fn new() -> Self { Self { state: 0 } }
 }
 
-impl Progress for Counter256 {
+impl Spinner for Counter256 {
     fn set(&mut self, state: u32) { self.state = state as u8; }
     fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8); }
 }
@@ -156,7 +160,7 @@ impl Spinner8 {
     pub fn new() -> Self { Self { state: 0 } }
 }
 
-impl Progress for Spinner8 {
+impl Spinner for Spinner8 {
     fn set(&mut self, state: u32) { self.state = state as u8 % SPINNER8_STATES.len() as u8; }
     fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % SPINNER8_STATES.len() as u8; }
 }
@@ -179,7 +183,7 @@ impl Counter16 {
     pub fn new() -> Self { Self { state: 0 } }
 }
 
-impl Progress for Counter16 {
+impl Spinner for Counter16 {
     fn set(&mut self, state: u32) { self.state = state as u8 % COUNTER16_STATES.len() as u8; }
     fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % COUNTER16_STATES.len() as u8; }
 }
@@ -202,7 +206,7 @@ impl Spinner4 {
     pub fn new() -> Self { Self { state: 0 } }
 }
 
-impl Progress for Spinner4 {
+impl Spinner for Spinner4 {
     fn set(&mut self, state: u32) { self.state = state as u8 % SPINNER4_STATES.len() as u8; }
     fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % SPINNER4_STATES.len() as u8; }
 }
@@ -223,7 +227,7 @@ impl Snake {
     pub fn new() -> Self { Self { state: 0 } }
 }
 
-impl Progress for Snake {
+impl Spinner for Snake {
     fn set(&mut self, state: u32) { self.state = state; }
     fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count); }
 }
@@ -245,29 +249,86 @@ impl Display for Snake {
     }
 }
 
-/// A helper for estimating time to completion using an exponential moving average
+/// Exponential moving average, useful for computing throughput
 #[derive(Debug, Copy, Clone)]
-pub struct TimeEstimate {
+pub struct MovingAverage {
     alpha: f32,
-    rate: f32,
+    value: f32,
 }
 
-impl TimeEstimate {
-    /// `alpha` is in (0, 1] describing how responsive to be, and `rate` is in [0, 1] describing initial progress per
-    /// second
-    pub fn new(alpha: f32, rate: f32) -> Self { TimeEstimate { alpha, rate } }
+impl MovingAverage {
+    /// `alpha` is in (0, 1] describing how responsive to be to each update
+    pub fn new(alpha: f32, initial: f32) -> Self { Self { alpha, value: initial } }
 
-    /// `progress` is change in proportion complete over `interval`
-    pub fn update(&mut self, progress: f32, interval: Duration) {
-        let seconds = interval.as_secs() as f32 + interval.subsec_nanos() as f32 * 1e-9;
-        self.rate = self.alpha * progress / seconds + (1.0 - self.alpha) * self.rate;
+    /// Update with a new sample
+    pub fn update(&mut self, value: f32) {
+        self.value = self.alpha * value + (1.0 - self.alpha) * self.value;
     }
 
-    /// `remaining` is the proportion incomplete
-    ///
-    /// Returns the expected amount of time until completion.
-    pub fn estimate(&self, remaining: f32) -> Duration {
-        let seconds = remaining / self.rate;
-        Duration::new(seconds.trunc() as u64, ((seconds as f64).fract() * 1e9) as u32)
+    /// Get the current average value
+    pub fn get(&self) -> f32 { self.value }
+}
+
+/// Given an exact value `x`, return the same value scaled to the nearest lesser binary prefix, and the prefix in
+/// question.
+pub fn binary_prefix(x: f64) -> (f64, Option<&'static str>) {
+    const TABLE: [&'static str; 8] = [
+        "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"
+    ];
+
+    let mut divisor = 1024.0;
+    if x < divisor { return (x, None); }
+    let (last, most) = TABLE.split_last().unwrap();
+    for prefix in most {
+        let next = divisor * 1024.0;
+        if next > x {
+            return (x / divisor, Some(prefix));
+        }
+        divisor = next;
+    }
+    (x / divisor, Some(last))
+}
+
+/// Given an exact value `x`, return the same value scaled to the nearest lesser SI prefix, and the prefix in question.
+pub fn si_prefix(x: f64) -> (f64, Option<&'static str>) {
+    const TABLE: [&'static str; 8] = [
+        "K", "M", "G", "T", "P", "E", "Z", "Y"
+    ];
+
+    let mut divisor = 1000.0;
+    if x < divisor { return (x, None); }
+    let (last, most) = TABLE.split_last().unwrap();
+    for prefix in most {
+        let next = divisor * 1e3;
+        if next > x {
+            return (x / divisor, Some(prefix));
+        }
+        divisor = next;
+    }
+    (x / divisor, Some(last))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bar_sanity() {
+        let mut bar = Bar::new();
+        assert_eq!(format!("{:10}", bar), "          ");
+        bar.set(1.0);
+        assert_eq!(format!("{:10}", bar), "██████████");
+    }
+
+    #[test]
+    fn binary_prefixes() {
+        assert_eq!(binary_prefix(2.0 * 1024.0), (2.0, Some("Ki")));
+        assert_eq!(binary_prefix(2.0 * 1024.0 * 1024.0), (2.0, Some("Mi")));
+    }
+
+    #[test]
+    fn si_prefixes() {
+        assert_eq!(si_prefix(2e3), (2.0, Some("K")));
+        assert_eq!(si_prefix(2e6), (2.0, Some("M")));
     }
 }

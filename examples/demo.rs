@@ -23,7 +23,7 @@ fn main() {
         s16.set(i >> 2);
         s256.set(i >> 1);
         snake.set(i);
-        bar.set(i * (u32::max_value() / 1000));
+        bar.set(i as f32 / 1000.0);
 
         let (width, _) = termion::terminal_size().unwrap();
         write!(stdout, "{}{}{} {} {} {} {} [{:width$}]",
