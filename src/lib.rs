@@ -1,8 +1,8 @@
 //! # Yet Another Progress Bar
 //!
-//! This library provides lightweight tools for rendering Unicode progress indicators. Unlike most similar libraries, it
-//! performs no IO internally, instead providing `Display` implementations. Handling the details of any particular
-//! output device is left to the user.
+//! This library provides lightweight tools for rendering progress indicators and related information. Unlike most
+//! similar libraries, it performs no IO internally, instead providing `Display` implementations. Handling the details
+//! of any particular output device is left to the user.
 //!
 //! # Examples
 //! The `termion` crate can be used to implement good behavior on an ANSI terminal:
@@ -31,6 +31,8 @@
 
 use std::fmt::{self, Write, Display};
 
+pub mod prefix;
+
 /// Indicators that communicate a proportion of progress towards a known end point
 pub trait Progress: Display {
     /// Set the amount of progress
@@ -40,7 +42,7 @@ pub trait Progress: Display {
     fn set(&mut self, value: f32);
 }
 
-/// A high-resolution progress bar using block elements
+/// An unusually high-resolution progress bar using Unicode block elements
 ///
 /// # Examples
 /// ```
@@ -269,45 +271,6 @@ impl MovingAverage {
     pub fn get(&self) -> f32 { self.value }
 }
 
-/// Given an exact value `x`, return the same value scaled to the nearest lesser binary prefix, and the prefix in
-/// question.
-pub fn binary_prefix(x: f64) -> (f64, Option<&'static str>) {
-    const TABLE: [&'static str; 8] = [
-        "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"
-    ];
-
-    let mut divisor = 1024.0;
-    if x < divisor { return (x, None); }
-    let (last, most) = TABLE.split_last().unwrap();
-    for prefix in most {
-        let next = divisor * 1024.0;
-        if next > x {
-            return (x / divisor, Some(prefix));
-        }
-        divisor = next;
-    }
-    (x / divisor, Some(last))
-}
-
-/// Given an exact value `x`, return the same value scaled to the nearest lesser SI prefix, and the prefix in question.
-pub fn si_prefix(x: f64) -> (f64, Option<&'static str>) {
-    const TABLE: [&'static str; 8] = [
-        "K", "M", "G", "T", "P", "E", "Z", "Y"
-    ];
-
-    let mut divisor = 1000.0;
-    if x < divisor { return (x, None); }
-    let (last, most) = TABLE.split_last().unwrap();
-    for prefix in most {
-        let next = divisor * 1e3;
-        if next > x {
-            return (x / divisor, Some(prefix));
-        }
-        divisor = next;
-    }
-    (x / divisor, Some(last))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -318,17 +281,5 @@ mod tests {
         assert_eq!(format!("{:10}", bar), "          ");
         bar.set(1.0);
         assert_eq!(format!("{:10}", bar), "██████████");
-    }
-
-    #[test]
-    fn binary_prefixes() {
-        assert_eq!(binary_prefix(2.0 * 1024.0), (2.0, Some("Ki")));
-        assert_eq!(binary_prefix(2.0 * 1024.0 * 1024.0), (2.0, Some("Mi")));
-    }
-
-    #[test]
-    fn si_prefixes() {
-        assert_eq!(si_prefix(2e3), (2.0, Some("K")));
-        assert_eq!(si_prefix(2e6), (2.0, Some("M")));
     }
 }
