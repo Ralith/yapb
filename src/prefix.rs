@@ -62,6 +62,7 @@ pub fn si(x: f64) -> (f64, Option<&'static str>) {
 ///
 /// For compactness, exponential notation is used for values that are larger than `1eN` or smaller than `1e-N`.
 pub fn fmt_sigfigs(f: &mut fmt::Formatter, value: f64, figures: usize) -> fmt::Result {
+    if value == 0.0 { return write!(f, "{:.*}", figures - 1, 0.0); }
     let log = value.abs().log10() as isize;
     if log < 0 || log >= figures as isize {
         write!(f, "{:.*e}", figures - 1, value)
@@ -82,7 +83,7 @@ impl Display for SigFigs {
 
 /// Helper struct to compactly format a value with a binary unit prefix
 ///
-/// If the provided value is in [1e-2, 1e28), this will produce at most 7 ASCII characters.
+/// If the provided value is equal to 0 or is in [1e-2, 1e28), this will produce at most 7 ASCII characters.
 ///
 /// # Examples
 /// ```
@@ -155,6 +156,7 @@ mod tests {
 
     #[test]
     fn binary_fmt() {
+        assert_eq!(Binary(0.0).to_string(), "0.00 ");
         assert_eq!(Binary(0.001).to_string(), "1.00e-3 ");
         assert_eq!(Binary(0.01).to_string(), "0.01 ");
         assert_eq!(Binary(1023.0).to_string(), "1023 ");
