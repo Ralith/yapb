@@ -1,6 +1,6 @@
 [package]
 name = "yapb"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Benjamin Saunders <ben.e.saunders@gmail.com>"]
 description = "Lightweight, pure, and unopinionated Unicode progress visualization"
 repository = "https://github.com/Ralith/yapb"

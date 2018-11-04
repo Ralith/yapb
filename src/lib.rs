@@ -72,7 +72,7 @@ impl Display for Bar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let width = f.width().unwrap_or(80) as u32;
         // Scale by width, rounding to nearest
-        let count = width as f32 * self.progress;
+        let count = width as f32 * self.progress.max(0.0).min(1.0);
         let whole = count.trunc() as u32;
         for _ in 0..whole {
             f.write_char('█')?;
