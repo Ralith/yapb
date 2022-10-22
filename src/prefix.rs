@@ -1,25 +1,19 @@
 //! Helpers to display compact human-readable numbers
 
-use std::fmt::{self, Write, Display};
+use std::fmt::{self, Display, Write};
 
-/// Given an exact value `x`, return the same value scaled to the nearest lesser binary prefix, and the prefix in
-/// question.
-pub fn binary(x: f64) -> (f64, Option<&'static str>) {
-    const TABLE: [&'static str; 8] = [
-        "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"
-    ];
+/// Find the smallest binary prefix with which the whole part of `x` is at most three digits, and
+/// return the scaled `x` and that prefix.
+pub fn binary(x: f64) -> (f64, &'static str) {
+    const TABLE: [&str; 9] = ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi"];
 
-    let mut divisor = 1024.0;
-    if x < divisor { return (x, None); }
-    let (last, most) = TABLE.split_last().unwrap();
-    for prefix in most {
-        let next = divisor * 1024.0;
-        if next > x {
-            return (x / divisor, Some(prefix));
-        }
-        divisor = next;
+    let mut i = 0;
+    let mut scaled = x;
+    while scaled.abs() >= 1000.0 && i < TABLE.len() - 1 {
+        i += 1;
+        scaled /= 1024.0;
     }
-    (x / divisor, Some(last))
+    (scaled, TABLE[i])
 }
 
 /// Given an exact value `x`, return the same value scaled to the nearest lesser SI prefix, and the prefix in question.
@@ -80,7 +74,6 @@ impl Display for SigFigs {
     }
 }
 
-
 /// Helper struct to compactly format a value with a binary unit prefix
 ///
 /// If the provided value is equal to 0 or is in [1e-2, 1e28), this will produce at most 7 ASCII characters.
@@ -97,15 +90,9 @@ impl Display for Binary {
             write!(f, "{:.2} ", self.0)?;
         } else {
             let (value, prefix) = binary(self.0);
-            if value >= 1000.0 {
-                fmt_sigfigs(f, value, 4)?;
-            } else {
-                fmt_sigfigs(f, value, 3)?;
-            }
+            fmt_sigfigs(f, value, 3)?;
             f.write_char(' ')?;
-            if let Some(prefix) = prefix {
-                f.write_str(prefix)?;
-            }
+            f.write_str(prefix)?;
         }
         Ok(())
     }
@@ -134,8 +121,8 @@ mod tests {
 
     #[test]
     fn binary_prefixes() {
-        assert_eq!(binary(2.0 * 1024.0), (2.0, Some("Ki")));
-        assert_eq!(binary(2.0 * 1024.0 * 1024.0), (2.0, Some("Mi")));
+        assert_eq!(binary(2.0 * 1024.0), (2.0, "Ki"));
+        assert_eq!(binary(2.0 * 1024.0 * 1024.0), (2.0, "Mi"));
     }
 
     #[test]
@@ -159,9 +146,11 @@ mod tests {
         assert_eq!(Binary(0.0).to_string(), "0.00 ");
         assert_eq!(Binary(0.001).to_string(), "1.00e-3 ");
         assert_eq!(Binary(0.01).to_string(), "0.01 ");
-        assert_eq!(Binary(1023.0).to_string(), "1023 ");
+        assert_eq!(Binary(999.0).to_string(), "999 ");
+        assert_eq!(Binary(1023.0).to_string(), "1.00 Ki");
         assert_eq!(Binary(2.0 * 1024.0).to_string(), "2.00 Ki");
-        assert_eq!(Binary(1023.0 * 1024.0).to_string(), "1023 Ki");
+        assert_eq!(Binary(999.0 * 1024.0).to_string(), "999 Ki");
+        assert_eq!(Binary(1023.0 * 1024.0).to_string(), "1.00 Mi");
     }
 
     #[test]
