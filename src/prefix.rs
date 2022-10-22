@@ -17,7 +17,7 @@ pub fn binary(x: f64) -> (f64, &'static str) {
 }
 
 /// Given an exact value `x`, return the same value scaled to the nearest lesser SI prefix, and the prefix in question.
-pub fn si(x: f64) -> (f64, Option<&'static str>) {
+pub fn si(x: f64) -> (f64, &'static str) {
     const SMALL: [&'static str; 8] = [
         "m", "µ", "n", "p", "f", "a", "z", "y",
     ];
@@ -31,24 +31,24 @@ pub fn si(x: f64) -> (f64, Option<&'static str>) {
         for prefix in most {
             let next = divisor * 1e-3;
             if next < x.abs() {
-                return (x / divisor, Some(prefix));
+                return (x / divisor, prefix);
             }
             divisor = next;
         }
-        (x / divisor, Some(last))
+        (x / divisor, last)
     } else if x.abs() < 1e3 {
-        (x, None)
+        (x, "")
     } else {
         let mut divisor = 1e3;
         let (last, most) = LARGE.split_last().unwrap();
         for prefix in most {
             let next = divisor * 1e3;
             if next > x.abs() {
-                return (x / divisor, Some(prefix));
+                return (x / divisor, prefix);
             }
             divisor = next;
         }
-        (x / divisor, Some(last))
+        (x / divisor, last)
     }
 }
 
@@ -108,9 +108,7 @@ impl Display for Scientific {
         let (value, prefix) = si(self.0);
         fmt_sigfigs(f, value, 3)?;
         f.write_char(' ')?;
-        if let Some(prefix) = prefix {
-            f.write_str(prefix)?;
-        }
+        f.write_str(prefix)?;
         Ok(())
     }
 }
@@ -127,8 +125,8 @@ mod tests {
 
     #[test]
     fn si_prefixes() {
-        assert_eq!(si(2e3), (2.0, Some("k")));
-        assert_eq!(si(2e6), (2.0, Some("M")));
+        assert_eq!(si(2e3), (2.0, "k"));
+        assert_eq!(si(2e6), (2.0, "M"));
     }
 
     #[test]
