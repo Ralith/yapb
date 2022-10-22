@@ -18,12 +18,8 @@ pub fn binary(x: f64) -> (f64, &'static str) {
 
 /// Given an exact value `x`, return the same value scaled to the nearest lesser SI prefix, and the prefix in question.
 pub fn si(x: f64) -> (f64, &'static str) {
-    const SMALL: [&'static str; 8] = [
-        "m", "µ", "n", "p", "f", "a", "z", "y",
-    ];
-    const LARGE: [&'static str; 8] = [
-        "k", "M", "G", "T", "P", "E", "Z", "Y"
-    ];
+    const SMALL: [&'static str; 8] = ["m", "µ", "n", "p", "f", "a", "z", "y"];
+    const LARGE: [&'static str; 8] = ["k", "M", "G", "T", "P", "E", "Z", "Y"];
 
     if x.abs() < 1.0 {
         let mut divisor = 1e-3;
@@ -56,7 +52,9 @@ pub fn si(x: f64) -> (f64, &'static str) {
 ///
 /// For compactness, exponential notation is used for values that are larger than `1eN` or smaller than `1e-N`.
 pub fn fmt_sigfigs(f: &mut fmt::Formatter, value: f64, figures: usize) -> fmt::Result {
-    if value == 0.0 { return write!(f, "{:.*}", figures - 1, 0.0); }
+    if value == 0.0 {
+        return write!(f, "{:.*}", figures - 1, 0.0);
+    }
     let log = value.abs().log10() as isize;
     if log < 0 || log >= figures as isize {
         write!(f, "{:.*e}", figures - 1, value)

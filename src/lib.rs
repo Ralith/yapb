@@ -29,7 +29,7 @@
 //! }
 //! ```
 
-use std::fmt::{self, Write, Display};
+use std::fmt::{self, Display, Write};
 
 pub mod prefix;
 
@@ -57,15 +57,19 @@ pub struct Bar {
 }
 
 impl Bar {
-    pub fn new() -> Self { Bar {
-        progress: 0.0,
-    }}
+    pub fn new() -> Self {
+        Bar { progress: 0.0 }
+    }
 
-    pub fn get(&self) -> f32 { self.progress }
+    pub fn get(&self) -> f32 {
+        self.progress
+    }
 }
 
 impl Progress for Bar {
-    fn set(&mut self, value: f32) { self.progress = value; }
+    fn set(&mut self, value: f32) {
+        self.progress = value;
+    }
 }
 
 impl Display for Bar {
@@ -117,30 +121,34 @@ pub trait Spinner: Display {
 /// # use yapb::*;
 /// let mut spinner = Counter256::new();
 /// assert_eq!(format!("{}", spinner), "⠀");
-/// spinner.step(0x0F);	
+/// spinner.step(0x0F);
 /// assert_eq!(format!("{}", spinner), "⡇");
 /// spinner.step(0xF0);
 /// assert_eq!(format!("{}", spinner), "⣿");
 /// ```
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Counter256 {
-    state: u8
+    state: u8,
 }
 
 impl Counter256 {
-    pub fn new() -> Self { Self { state: 0 } }
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
 }
 
 impl Spinner for Counter256 {
-    fn set(&mut self, state: u32) { self.state = state as u8; }
-    fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8); }
+    fn set(&mut self, state: u32) {
+        self.state = state as u8;
+    }
+    fn step(&mut self, count: u32) {
+        self.state = self.state.wrapping_add(count as u8);
+    }
 }
 
 fn braille_binary(value: u8) -> char {
     // Rearrange bits for consistency
-    let value = (value & 0b10000111)
-        | ((value & 0b00001000) << 3)
-        | ((value & 0b01110000) >> 1);
+    let value = (value & 0b10000111) | ((value & 0b00001000) << 3) | ((value & 0b01110000) >> 1);
     unsafe { ::std::char::from_u32_unchecked(0x2800 + value as u32) }
 }
 
@@ -153,18 +161,24 @@ impl Display for Counter256 {
 /// A spinner that cycles through 8 states with a single spinning braille dot
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Spinner8 {
-    state: u8
+    state: u8,
 }
 
 const SPINNER8_STATES: [char; 8] = ['⡀', '⠄', '⠂', '⠁', '⠈', '⠐', '⠠', '⢀'];
 
 impl Spinner8 {
-    pub fn new() -> Self { Self { state: 0 } }
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
 }
 
 impl Spinner for Spinner8 {
-    fn set(&mut self, state: u32) { self.state = state as u8 % SPINNER8_STATES.len() as u8; }
-    fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % SPINNER8_STATES.len() as u8; }
+    fn set(&mut self, state: u32) {
+        self.state = state as u8 % SPINNER8_STATES.len() as u8;
+    }
+    fn step(&mut self, count: u32) {
+        self.state = self.state.wrapping_add(count as u8) % SPINNER8_STATES.len() as u8;
+    }
 }
 
 impl Display for Spinner8 {
@@ -176,18 +190,26 @@ impl Display for Spinner8 {
 /// A spinner that cycles through 16 states by counting in binary using block elements
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Counter16 {
-    state: u8
+    state: u8,
 }
 
-const COUNTER16_STATES: [char; 16] = [' ', '▘', '▖', '▌', '▝', '▀', '▞', '▛', '▗', '▚', '▄', '▙', '▐', '▜', '▟', '█'];
+const COUNTER16_STATES: [char; 16] = [
+    ' ', '▘', '▖', '▌', '▝', '▀', '▞', '▛', '▗', '▚', '▄', '▙', '▐', '▜', '▟', '█',
+];
 
 impl Counter16 {
-    pub fn new() -> Self { Self { state: 0 } }
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
 }
 
 impl Spinner for Counter16 {
-    fn set(&mut self, state: u32) { self.state = state as u8 % COUNTER16_STATES.len() as u8; }
-    fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % COUNTER16_STATES.len() as u8; }
+    fn set(&mut self, state: u32) {
+        self.state = state as u8 % COUNTER16_STATES.len() as u8;
+    }
+    fn step(&mut self, count: u32) {
+        self.state = self.state.wrapping_add(count as u8) % COUNTER16_STATES.len() as u8;
+    }
 }
 
 impl Display for Counter16 {
@@ -199,18 +221,24 @@ impl Display for Counter16 {
 /// A spinner that cycles through 4 states with a single spinning block element
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Spinner4 {
-    state: u8
+    state: u8,
 }
 
 const SPINNER4_STATES: [char; 4] = ['▖', '▘', '▝', '▗'];
 
 impl Spinner4 {
-    pub fn new() -> Self { Self { state: 0 } }
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
 }
 
 impl Spinner for Spinner4 {
-    fn set(&mut self, state: u32) { self.state = state as u8 % SPINNER4_STATES.len() as u8; }
-    fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count as u8) % SPINNER4_STATES.len() as u8; }
+    fn set(&mut self, state: u32) {
+        self.state = state as u8 % SPINNER4_STATES.len() as u8;
+    }
+    fn step(&mut self, count: u32) {
+        self.state = self.state.wrapping_add(count as u8) % SPINNER4_STATES.len() as u8;
+    }
 }
 
 impl Display for Spinner4 {
@@ -222,24 +250,31 @@ impl Display for Spinner4 {
 /// A spinner that cycles through many states with a snake made of 1-6 braille dots
 #[derive(Eq, PartialEq, Ord, PartialOrd, Debug, Copy, Clone)]
 pub struct Snake {
-    state: u32
+    state: u32,
 }
 
 impl Snake {
-    pub fn new() -> Self { Self { state: 0 } }
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
 }
 
 impl Spinner for Snake {
-    fn set(&mut self, state: u32) { self.state = state; }
-    fn step(&mut self, count: u32) { self.state = self.state.wrapping_add(count); }
+    fn set(&mut self, state: u32) {
+        self.state = state;
+    }
+    fn step(&mut self, count: u32) {
+        self.state = self.state.wrapping_add(count);
+    }
 }
 
 impl Display for Snake {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         const WOBBLE: u32 = 5;
-        let length = (((self.state % (2*WOBBLE)) as i32 - (WOBBLE as i32)).abs() + 1) as u32;
+        let length = (((self.state % (2 * WOBBLE)) as i32 - (WOBBLE as i32)).abs() + 1) as u32;
         let bits = !(0xFFu8 << length);
-        let position = (WOBBLE * (self.state / (2*WOBBLE)) + (self.state % (2*WOBBLE)).saturating_sub(WOBBLE)) as u8;
+        let position = (WOBBLE * (self.state / (2 * WOBBLE))
+            + (self.state % (2 * WOBBLE)).saturating_sub(WOBBLE)) as u8;
         let snake = bits.rotate_right(position as u32);
         // Reverse most significant nybble
         let value = snake & 0xF
@@ -260,7 +295,12 @@ pub struct MovingAverage {
 
 impl MovingAverage {
     /// `alpha` is in (0, 1] describing how responsive to be to each update
-    pub fn new(alpha: f32, initial: f32) -> Self { Self { alpha, value: initial } }
+    pub fn new(alpha: f32, initial: f32) -> Self {
+        Self {
+            alpha,
+            value: initial,
+        }
+    }
 
     /// Update with a new sample
     pub fn update(&mut self, value: f32) {
@@ -268,7 +308,9 @@ impl MovingAverage {
     }
 
     /// Get the current average value
-    pub fn get(&self) -> f32 { self.value }
+    pub fn get(&self) -> f32 {
+        self.value
+    }
 }
 
 #[cfg(test)]

@@ -1,8 +1,8 @@
-extern crate yapb;
 extern crate termion;
+extern crate yapb;
 
-use std::{thread, time};
 use std::io::{self, Write};
+use std::{thread, time};
 
 use yapb::*;
 
@@ -26,9 +26,20 @@ fn main() {
         bar.set(i as f32 / 1000.0);
 
         let (width, _) = termion::terminal_size().unwrap();
-        write!(stdout, "{}{}{} {} {} {} {} [{:width$}]",
-               termion::clear::AfterCursor, termion::cursor::Restore,
-               s4, s8, s16, s256, snake, bar, width = width as usize - 12).unwrap();
+        write!(
+            stdout,
+            "{}{}{} {} {} {} {} [{:width$}]",
+            termion::clear::AfterCursor,
+            termion::cursor::Restore,
+            s4,
+            s8,
+            s16,
+            s256,
+            snake,
+            bar,
+            width = width as usize - 12
+        )
+        .unwrap();
         stdout.flush().unwrap();
         thread::sleep(time::Duration::from_millis(50));
     }
